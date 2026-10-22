@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Exact Chronological Age Calculator</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+<div class="max-w-xl mx-auto p-4">
+  <h1 class="text-2xl font-bold text-gray-800 mb-1">Chronological Age Calculator</h1>
+  <p class="text-gray-500 text-sm mb-4">Calculate exact age and countdown to the next birthday</p>
+
+  <!-- Inputs -->
+  <section aria-labelledby="input-heading" class="bg-white rounded-xl shadow p-5 mb-4">
+    <h2 id="input-heading" class="text-lg font-semibold text-gray-700 mb-3">Dates</h2>
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <label for="birth-date" class="block text-sm font-medium text-gray-600 mb-1">Date of Birth</label>
+        <input id="birth-date" type="date" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" aria-label="Date of birth">
+      </div>
+      <div>
+        <label for="target-date" class="block text-sm font-medium text-gray-600 mb-1">Target Date</label>
+        <input id="target-date" type="date" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" aria-label="Target date for age calculation">
+      </div>
+    </div>
+    <div class="flex gap-2 mt-3">
+      <button id="calc-btn" class="flex-1 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">Calculate Age</button>
+      <button id="today-btn" class="px-4 py-2 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400">Use Today</button>
+    </div>
+    <p id="error-msg" class="text-xs text-red-500 mt-2 hidden" role="alert"></p>
+  </section>
+
+  <!-- Results -->
+  <section id="results" aria-labelledby="results-heading" class="hidden">
+    <!-- Main age -->
+    <div class="bg-indigo-600 rounded-xl shadow p-5 mb-4 text-white text-center">
+      <p class="text-xs font-medium opacity-75 mb-1">Exact Age</p>
+      <p id="age-main" class="text-3xl font-bold">0 years</p>
+      <p id="age-detail" class="text-sm opacity-80 mt-1"></p>
+    </div>
+
+    <!-- Grid of units -->
+    <div class="grid grid-cols-3 gap-3 mb-4">
+      <div class="bg-white rounded-xl shadow p-3 text-center">
+        <p class="text-2xl font-bold text-indigo-700" id="r-years">0</p>
+        <p class="text-xs text-gray-500">Years</p>
+      </div>
+      <div class="bg-white rounded-xl shadow p-3 text-center">
+        <p class="text-2xl font-bold text-blue-600" id="r-months">0</p>
+        <p class="text-xs text-gray-500">Months</p>
+      </div>
+      <div class="bg-white rounded-xl shadow p-3 text-center">
+        <p class="text-2xl font-bold text-green-600" id="r-days">0</p>
+        <p class="text-xs text-gray-500">Days</p>
+      </div>
+      <div class="bg-white rounded-xl shadow p-3 text-center">
+        <p class="text-2xl font-bold text-yellow-600" id="r-weeks">0</p>
+        <p class="text-xs text-gray-500">Total Weeks</p>
+      </div>
+      <div class="bg-white rounded-xl shadow p-3 text-center">
+        <p class="text-2xl font-bold text-orange-600" id="r-total-days">0</p>
+        <p class="text-xs text-gray-500">Total Days</p>
+      </div>
+      <div class="bg-white rounded-xl shadow p-3 text-center">
+        <p class="text-2xl font-bold text-red-500" id="r-hours">0</p>
+        <p class="text-xs text-gray-500">Total Hours</p>
+      </div>
+    </div>
+
+    <!-- More precise -->
+    <div class="bg-white rounded-xl shadow p-4 mb-4">
+      <h2 class="text-sm font-semibold text-gray-700 mb-2">High Precision Breakdown</h2>
+      <div class="grid grid-cols-2 gap-2 text-sm text-gray-600">
+        <div>Total Minutes: <span id="r-minutes" class="font-medium text-gray-900"></span></div>
+        <div>Total Seconds: <span id="r-seconds" class="font-medium text-gray-900"></span></div>
+      </div>
+    </div>
+
+    <!-- Next Birthday -->
+    <section aria-labelledby="bday-heading" class="bg-white rounded-xl shadow p-5">
+      <h2 id="bday-heading" class="text-lg font-semibold text-gray-700 mb-3">Next Birthday Countdown</h2>
+      <div class="mb-3">
+        <div class="flex justify-between text-xs text-gray-500 mb-1">
+          <span id="bday-from"></span>
+          <span id="bday-days-left" class="font-medium text-indigo-600"></span>
+        </div>
+        <div class="w-full bg-gray-100 rounded-full h-3" role="progressbar" aria-valuemin="0" aria-valuemax="100" id="bday-progress-container">
+          <div id="bday-progress" class="bg-indigo-500 h-3 rounded-full transition-all" style="width:0%"></div>
+        </div>
+        <div class="flex justify-between text-xs text-gray-400 mt-0.5">
+          <span>Last birthday</span>
+          <span>Next birthday</span>
+        </div>
+      </div>
+      <p id="bday-message" class="text-sm text-center font-medium text-indigo-700"></p>
+    </section>
+  </section>
+</div>
+
+<script>
+function pad(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
+
+function calcAge(birth, target) {
+  let years = target.getFullYear() - birth.getFullYear();
+  let months = target.getMonth() - birth.getMonth();
+  let days = target.getDate() - birth.getDate();
+
+  if (days < 0) {
+    months--;
+    const prevMonth = new Date(target.getFullYear(), target.getMonth(), 0);
+    days += prevMonth.getDate();
+  }
+  if (months < 0) { years--; months += 12; }
+
+  const totalMs = target - birth;
+  const totalSec = Math.floor(totalMs / 1000);
+  const totalMin = Math.floor(totalSec / 60);
+  const totalHrs = Math.floor(totalMin / 60);
+  const totalDays = Math.floor(totalMs / 86400000);
+  const totalWeeks = Math.floor(totalDays / 7);
+
+  return {years, months, days, totalDays, totalWeeks, totalHrs, totalMin, totalSec};
+}
+
+function nextBirthday(birth, target) {
+  let next = new Date(target.getFullYear(), birth.getMonth(), birth.getDate());
+  if (next <= target) next.setFullYear(next.getFullYear() + 1);
+  let prev = new Date(next); prev.setFullYear(prev.getFullYear() - 1);
+  const span = next - prev;
+  const elapsed = target - prev;
+  const pct = Math.min(100, Math.max(0, (elapsed / span) * 100));
+  const daysLeft = Math.ceil((next - target) / 86400000);
+  return {next, prev, pct, daysLeft};
+}
+
+function formatDate(d) {
+  return d.toLocaleDateString('en-US', {month:'long', day:'numeric', year:'numeric'});
+}
+
+function calculate() {
+  const errEl = document.getElementById('error-msg');
+  errEl.classList.add('hidden');
+  const birthVal = document.getElementById('birth-date').value;
+  const targetVal = document.getElementById('target-date').value;
+
+  if (!birthVal || !targetVal) {
+    errEl.textContent = 'Please select both dates.';
+    errEl.classList.remove('hidden');
+    return;
+  }
+
+  const birth = new Date(birthVal + 'T00:00:00');
+  const target = new Date(targetVal + 'T00:00:00');
+
+  if (birth >= target) {
+    errEl.textContent = 'Birth date must be before the target date.';
+    errEl.classList.remove('hidden');
+    return;
+  }
+
+  const age = calcAge(birth, target);
+  const bday = nextBirthday(birth, target);
+
+  document.getElementById('age-main').textContent = age.years + ' year' + (age.years!==1?'s':'');
+  document.getElementById('age-detail').textContent = age.months + ' months, ' + age.days + ' days';
+  document.getElementById('r-years').textContent = pad(age.years);
+  document.getElementById('r-months').textContent = pad(age.months);
+  document.getElementById('r-days').textContent = pad(age.days);
+  document.getElementById('r-weeks').textContent = pad(age.totalWeeks);
+  document.getElementById('r-total-days').textContent = pad(age.totalDays);
+  document.getElementById('r-hours').textContent = pad(age.totalHrs);
+  document.getElementById('r-minutes').textContent = pad(age.totalMin);
+  document.getElementById('r-seconds').textContent = pad(age.totalSec);
+
+  // Birthday countdown
+  document.getElementById('bday-from').textContent = formatDate(bday.prev);
+  document.getElementById('bday-progress').style.width = bday.pct.toFixed(1) + '%';
+  document.getElementById('bday-progress-container').setAttribute('aria-valuenow', Math.round(bday.pct));
+
+  if (bday.daysLeft === 0) {
+    document.getElementById('bday-days-left').textContent = 'Today!';
+    document.getElementById('bday-message').textContent = 'Happy Birthday!';
+  } else {
+    document.getElementById('bday-days-left').textContent = bday.daysLeft + ' day' + (bday.daysLeft!==1?'s':'') + ' until ' + formatDate(bday.next);
+    document.getElementById('bday-message').textContent = bday.daysLeft + ' days until the next birthday on ' + formatDate(bday.next);
+  }
+
+  document.getElementById('results').classList.remove('hidden');
+}
+
+document.getElementById('calc-btn').addEventListener('click', calculate);
+document.getElementById('today-btn').addEventListener('click', () => {
+  const today = new Date().toISOString().slice(0,10);
+  document.getElementById('target-date').value = today;
+});
+
+// Set default target to today
+document.getElementById('target-date').value = new Date().toISOString().slice(0,10);
+</script>
+</body>
+</html>
